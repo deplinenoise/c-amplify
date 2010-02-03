@@ -1,0 +1,103 @@
+* Comma operator doesn't paren correctly inside funcall:
+  (foo (comma 1 2)) generates foo(1,2) rather than foo((1, 2)) as it should
+
+* Array types and declarations. Make aref work with arrays too
+  (possibly via pointer decay).
+
+* Switch/case AST - should be easy
+
+* Language concerns:
+
+  - Currently hijacking e.g. ptr, aref and other short words as part
+    of the grammar. Can they still be used as variable names without
+    breaking anything? Maybe, because the type grammar is separate
+    from the names. Is c-amplify a c-2 or c-1? :P
+
+* Make the pretty printer work better:
+
+  - Don't introduce new blocks when there's already a fresh block to use:
+    (progn (progn (progn (printf "foo"))))
+    should generate { printf("foo"); }
+    but currently generates { { { printf("foo"); } } }
+
+    Maybe something along the lines of freshline? (fresh-block?)
+
+    This could be extended to lexical declarations that must appear at
+    the top of a scope. Maybe a simplify-scopes funtion could be
+    devised for this that stops simplifying the structure if it sees a
+    shadowing variable declaration.
+
+    (progn (declare (a int))
+      (progn (declare b int)
+        (= b a)))
+
+    currently: { int a; { int b; b = a; } }
+    want: { int a; int b; b = a; }
+
+    If b is renamed to a, the nested block must reappear.
+
+  - Fix so null statements are dropped when they appear outside single
+    statement positions:
+
+    (when 1 *null-statement*) => if (1) ;
+    (when 1 (progn *null-statement*)) => if {}
+
+The semicolon is important in the first case
+
+(progn
+(= a 1)
+(*null-statement*)
+(= a 1)) => { a=1; a=1; }
+
+Don't know the rules for this yet, either it's that the null
+statement appears at progn scope that makes us want it dropped, or
+it's that it appears as the single statement of a control
+structure (if, while, ...)
+
+* Database serialization
+
+* Reamplifying just enough every run (track dependencies)
+
+* External declarations and linkage -- hairy
+
+- Import windows.h and entire CRT into x86, x64 packages as proof of
+concept (need a set of defines to import the correct definitions)
+
+- Translate preprocessor #defines to either constants or macros,
+whine about token pasting we can't map
+
+- Header importer:
+
+  Inputs:
+
+    - A set of defines that will match the intended backend compiler
+      (some defines may have values)
+
+    - A set of include paths (to look for additional includes)
+
+    - The root header file(s) to scan.
+
+  Outputs:
+
+    - A c-amplify file of extern declarations
+
+  Algorithm:
+
+    - Preprocess the file using the specified defines, include
+      paths. Parse the preprocessed output to get a complete list of
+      types and functions with the correct linkage (declspec, ...).
+
+    - Scan the headers for function-like macros; emit these as
+      c-macros in a best-effort way.
+
+- Lambdas
+
+  Accept an expression type matching (lambda <sig-list> <body>) which
+  evaluates to a function pointer of the lambda's signature.
+  Initially, we will just hoist the code out to a gensymd function and
+  use that name instead, but it would be cool to get limited lexical
+  capture later (similar to c++0x closures where the captures must be
+  specified).  In the case where it makes sense to close over some
+  variables they are to be used in the callback immediately, and must
+  be passed in some userdata pointer. Think about how these things
+  would fit together.

@@ -1,0 +1,3 @@
+
+(defstruct blargh
+	   (foo int))

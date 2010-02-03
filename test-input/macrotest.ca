@@ -1,0 +1,14 @@
+(defstruct FILE_tag)
+(deftype FILE (struct FILE_tag))
+
+(defun moo (((x y z) float) (return float))
+  (return (+ (* x y) z)))
+
+(defun unwind1 ((x int) (return int))
+  (with-open-file (file "c:/temp/foo.txt" "w")
+    (fprintf file "tjoho")
+    (if (! x)
+	(return 10.0))
+    (fprintf file "value: %d" x)
+    (return 20.0)))
+

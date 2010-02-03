@@ -1,0 +1,33 @@
+
+(defstruct tt1
+  (b (ptr const char)))
+
+(defstruct tt0
+  (a (const ptr struct tt1)))
+
+(defun some-fun ((string ptr const char)
+		 (return float))
+  (declare (x = 0)
+	   (y = (cast float 0.0)))
+  (for (= x 0) (< x 10) (++ x)
+       (when (> 10 (aref string x))
+	 (+= y (+ (aref string x) 64))))
+  (return y))
+
+(defun test-let ((input ptr const struct tt0)
+		 (return (ptr const char)))
+  (let ((x (-> input a b))
+        (result (some-fun x)))
+    (return result)))
+
+(defun sin ((r float) (return float))
+  (return r))
+
+(defun cos ((r float) (return float))
+  (return r))
+
+(defun my-function (((x y z) float) (:return float))
+  (let ((a (sin x))
+        (b (+ x (cos y))))
+    (return (+ (* z a) (* z b)))))
+

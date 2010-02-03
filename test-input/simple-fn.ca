@@ -1,0 +1,78 @@
+(deftype size-t u-long)
+
+(defstruct rs-allocator)
+(defstruct rs-strbuf)
+
+(defstruct rs-token-def
+  (text (ptr const char))
+  (value int))
+
+(defstruct rs-stream-base)
+
+(defstruct rs-memscope
+  (allocator (ptr struct rs-allocator)))
+
+(defstruct rs-tokenizer
+  (allocator (ptr (struct rs-allocator)))
+  (buffer-size size-t)
+  (buffer (ptr char))
+  ((buffer-pos buffer-max) ptr char)
+  (token (ptr (struct rs-strbuf)))
+  (token-count size-t)
+  (token-set (ptr (struct rs-token-def)))
+  (flags int)
+  (eof int)
+  (stream (ptr (struct rs-stream-base))))
+
+(defun prec-test (((a b c d) int)) => int
+       (declare ((x y) int))
+       (= x (= y (* c c)))
+       (if (or (>= (+ a b) (* c d)) (< a 9))
+	   (return (* (+ a b) (- c d)))
+	   (return (/ (* a b) (- c d)))))
+
+(defun i-token-sort-compare (((lhs rhs) (ptr const void))) => int
+       (return (rs-strcmp
+		(-> (cast (ptr const (struct rs-token-def)) lhs) text)
+		(-> (cast (ptr const (struct rs-token-def)) rhs) text))))
+
+(def-c-macro with-scratchpad (scratch-name &rest body)
+  `(progn
+     (declare ,scratch-name (struct rs-memscope))
+     (rs-scratchpad-init (& ,scratch-name))
+     (unwind-protect
+	  (progn
+	    ,@body)
+       (rs-scratchpad-cleanup (& ,scratch-name)))))
+
+(defun rs-tokenizer-create ((scope (ptr struct rs-memscope))
+			    (tokens (ptr const struct rs-token-def))
+			    (token-count size-t)
+			    (return (ptr (struct rs-tokenizer))))
+  (declare (self (ptr (struct rs-tokenizer)))
+	   (i size-t))
+
+  (= self (rs-alloc-raw scope (sizeof-type struct rs-tokenizer)))
+
+  (= (-> self buffer-size) 128)
+  (= (-> self buffer) (cast (ptr char) (rs-linear-raw-alloc-size (-> scope allocator) (-> self buffer-size))))
+  (= (-> self buffer-pos) (= (-> self buffer-max) (+ (-> self buffer) (-> self buffer-size))))
+  (= (-> self token-count) token-count)
+  (= (-> self token-set) (cast (ptr (struct rs-token-def))
+			       (rs-linear-raw-alloc-size (-> scope allocator)
+							 (* token-count (sizeof-type ptr struct rs-token-def)))))
+
+  (for (= i 0) (< i token-count) (++ i)
+       (= (-> (aref (-> self token-set) i) text) (rs-strdup scope (-> (aref tokens i) text)))
+       (= (-> (aref (-> self token-set) i) value) (-> (aref tokens i) value)))
+
+  (qsort (-> self token-set) token-count (sizeof-type struct rs-token-def)
+	 (lambda (((lhs rhs) (ptr const void)) (return int))
+	   (return (rs-strcmp
+		    (-> (cast (ptr const (struct rs-token-def)) lhs) text)
+		    (-> (cast (ptr const (struct rs-token-def)) rhs) text)))))
+
+  (= (-> self flags) 0)
+  (= (-> self eof) 0)
+  (= (-> self stream) NULL)
+  (return self))

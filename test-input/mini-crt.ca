@@ -1,0 +1,7 @@
+;; -*- lisp -*-
+
+(defun foo ((x int) (y int) (:return int))
+  (return (+ x y)))
+
+(defun/extern printf ((_format (ptr const char)) ...) => int)
+

@@ -1,0 +1,15 @@
+(defstruct moo
+  ((x y z) float)
+  ((foo) (ptr const int)))
+
+(defstruct torsk-test
+  ((fisk) ptr const volatile struct moo))
+
+(defun meh (((a b c) int)) => float
+  (declare (x int)
+	   (y float))
+  (= x 0)
+  (= y 0)
+  (for (= x 0) (< x 10) (++ x)
+     (printf "foo %d\\n" x)
+     (+= y (* (- x a) b))))

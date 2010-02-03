@@ -1,0 +1,9 @@
+
+(defsystem :core
+ (:files "let" "macrotest"))
+
+(defsystem :render
+ (:depends :core)
+ (:files "render-common"))
+
+(update :render)

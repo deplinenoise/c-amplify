@@ -1,0 +1,5 @@
+(defun t0 ((y int)) => int
+  (return (add-ints y (~ y))))
+
+(defun add-ints (((a b) int)) => int
+  (return (+ a b)))
