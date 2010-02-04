@@ -19,6 +19,10 @@
 		 (:file "typesys")
 		 (:file "macroexpand")
 		 (:file "c-read")
+		 (:file "ast")
+		 (:file "cprint")
+		 (:file "expr")
+		 (:file "stmt")
 		 (:file "clang")
 		 (:file "main")))
 
