@@ -44,7 +44,7 @@
 	       ((eq 'function (car emit-expr)) ; if :emit specifies a function, use that
 		`(funcall ,emit-expr ,self-sym))
 	       (t `(with-slots ,slot-names ,self-sym
-		     (%cg-print ,@emit-expr))))))))
+		     (generate-code* ,@emit-expr))))))))
 
 (defun/compile-time %gen-expr-type (base-type self-sym class-name clauses slot-names)
   (let ((expr (getf clauses :expr-type)))
@@ -123,8 +123,8 @@
      for operand in args
      do (progn
 	  (when emit-comma
-	    (%cg-print ", "))
-	  (%cg-print operand)))
+	    (generate-code ", "))
+	  (generate-code operand)))
   (values))
 
 (defmacro %cg-expr-scope (prec &rest body)
@@ -134,12 +134,11 @@
 	    (,need-parens (> ,prec-once *outer-precedence*))
 	    (*outer-precedence* ,prec-once))
        (when ,need-parens
-	 (%cg-print "("))
+	 (generate-code "("))
        (progn
 	 ,@body)
        (when ,need-parens
-	 (%cg-print ")")))))
-
+	 (generate-code ")")))))
 
 (defun %quote-c-string (str)
   (with-output-to-string (quoted-value)
@@ -157,7 +156,7 @@
     :slots ((value :type string :initarg :value :accessor literal-value))
     :parse ((type string a) (make-instance 'c-string-literal-expr :value a))
     :expr-type (eval-c-type '(ptr const char))
-    :emit #'(lambda (self) (%cg-print (%quote-c-string (slot-value self 'value)))))
+    :emit #'(lambda (self) (generate-code (%quote-c-string (slot-value self 'value)))))
 
 (def-custom-expr c-integer-literal-expr
     :precedence 1
@@ -209,14 +208,14 @@
 	      (with-slots (struct-expr member-names) self
 		(%cg-expr-scope
 		 1
-		 (%cg-print struct-expr)
+		 (generate-code struct-expr)
 		 (let* ((et (expr-typeof struct-expr))
 			(ct (base-type-of et)))
 		   (loop for symbol in member-names
 		      do (progn
 			   (if (typep (base-type-of ct) 'c-pointer-type)
-			       (%cg-print "->" symbol)
-			       (%cg-print "." symbol))
+			       (generate-code* "->" symbol)
+			       (generate-code* "." symbol))
 			   (setf ct (%select-field ct symbol)))))))))
 
 (def-unary-expr c-post-increment-expr :precedence 1 :symbol ++post :emit (operand "++") :expr-type (expr-typeof operand))
@@ -342,7 +341,7 @@
 	      (%cg-expr-scope
 	       1
 	       (with-slots (fun-expr args) self
-		 (%cg-print fun-expr "(")
+		 (generate-code* fun-expr "(")
 		 (let ((*outer-precedence* 13))
 		   (%emit-comma-sequence args))
 		 (princ ")")))))

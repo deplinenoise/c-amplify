@@ -4,7 +4,7 @@
 
 (defmacro %cg-stmt-around (&rest body)
   `(let ((*stmt-depth* (1+ *stmt-depth*)))
-     (%cg-print *cg-freshline*)
+     (generate-code *cg-freshline*)
      ,@body))
 
 (defun c-type-p (datum)
@@ -19,10 +19,10 @@
 
 (defmacro %cg-block-around (&rest body)
   `(progn
-     (%cg-print *cg-begin-block*)
+     (generate-code *cg-begin-block*)
      (let ((*compound-depth* (1+ *compound-depth*)))
        ,@body)
-     (%cg-print *cg-end-block*)))
+     (generate-code *cg-end-block*)))
 
 (deftype c-stmt-list ()
 '(satisfies c-stmt-list-p))
@@ -36,7 +36,7 @@
 
 (defmethod generate-code :around ((self c-stmt))
   (let ((*stmt-depth* (1+ *stmt-depth*)))
-    (%cg-print *cg-freshline*)
+    (generate-code *cg-freshline*)
     (call-next-method)))
 
 (defmethod generate-code ((self c-null-stmt))
@@ -49,7 +49,7 @@
 
 (defun %emit-compound-body (compound-stmt)
   (%cg-block-around
-   (%cg-print (c-compound-body compound-stmt))))
+   (generate-code (c-compound-body compound-stmt))))
 
 (defclass c-compound-stmt (c-compound-stmt-base) ())
 
@@ -88,12 +88,12 @@
 (defclass c-break-stmt (c-stmt) ())
 
 (defmethod generate-code ((self c-break-stmt))
-  (%cg-print "break;"))
+  (generate-code "break;"))
 
 (defclass c-continue-stmt (c-stmt) ())
 
 (defmethod generate-code ((self c-continue-stmt))
-  (%cg-print "continue;"))
+  (generate-code "continue;"))
 
 (defclass c-do-while-stmt (c-stmt)
   ((test-expr :initarg :test-expr :accessor test-expr :type c-expr)
@@ -101,7 +101,7 @@
 
 (defmethod generate-code ((self c-do-while-stmt))
   (with-slots (test-expr stmt) self
-    (%cg-print "do" stmt "while (" test-expr ");")))
+    (generate-code* "do" stmt "while (" test-expr ");")))
 
 (defclass c-expr-stmt (c-stmt)
   ((expr :type c-expr :initarg :expr :accessor expr)))
@@ -109,7 +109,7 @@
 (defmethod generate-code ((self c-expr-stmt))
   (with-slots (expr) self
     (%cg-stmt-around
-     (%cg-print expr ";"))))
+     (generate-code* expr ";"))))
 
 (defclass c-for-stmt (c-compound-stmt-base)
   ((init-expr :type c-expr :initarg :init-expr :accessor init-expr)
@@ -119,7 +119,7 @@
 (defmethod generate-code ((self c-for-stmt))
   (with-slots (init-expr test-expr iter-expr) self
     (%cg-stmt-around
-     (%cg-print "for (" init-expr "; " test-expr "; " iter-expr ")")
+     (generate-code* "for (" init-expr "; " test-expr "; " iter-expr ")")
      (%emit-compound-body self))))
 
 (defclass c-goto-stmt (c-stmt)
@@ -128,7 +128,7 @@
 (defmethod generate-code ((self c-goto-stmt))
   (with-slots (label) self
     (%cg-stmt-around
-     (%cg-print "goto " label ";"))))
+     (generate-code* "goto " label ";"))))
 
 (defmethod ast-children ((self c-goto-stmt))
   nil)
@@ -139,7 +139,7 @@
 (defmethod generate-code ((self c-label-stmt))
   (with-slots (label) self
     (%cg-stmt-around
-     (%cg-print *cg-freshline* label ":"))))
+     (generate-code* *cg-freshline* label ":"))))
 
 (defmethod ast-children ((self c-label-stmt))
   nil)
@@ -152,9 +152,9 @@
 (defmethod generate-code ((self c-if-stmt))
   (with-slots (test-expr true-stmt false-stmt) self
     (%cg-stmt-around
-     (%cg-print "if (" test-expr ")" true-stmt)
+     (generate-code* "if (" test-expr ")" true-stmt)
      (when false-stmt
-       (%cg-print "else" false-stmt)))))
+       (generate-code* "else" false-stmt)))))
 
 (defclass c-return-stmt (c-stmt)
   ((expr :type (or c-expr null) :initarg :expr :initform nil :accessor expr)))
@@ -162,10 +162,10 @@
 (defmethod generate-code ((self c-return-stmt))
   (with-slots (expr) self
     (%cg-stmt-around
-     (%cg-print "return")
+     (generate-code "return")
      (when expr
-       (%cg-print " " expr))
-     (%cg-print ";"))))
+       (generate-code* " " expr))
+     (generate-code ";"))))
 
 (defclass c-declarator (ast-node)
   ((name :type symbol :initarg :name :accessor name)
@@ -177,9 +177,9 @@
     ;; FIXME: need a (emit-declaration ...) to make function types
     ;; work, because there the type surrounds the identifier
     (%cg-stmt-around
-     (%cg-print decl-type " " name)
+     (generate-code* decl-type " " name)
      (when init-expr
-       (%cg-print " = " init-expr)))))
+       (generate-code* " = " init-expr)))))
 
 (defclass c-declare-stmt (c-stmt)
   ((declarators :type list :initarg :declarators :accessor declarators)))
@@ -187,7 +187,7 @@
 (defmethod generate-code ((self c-declare-stmt))
   (with-slots (declarators) self
     (dolist (d declarators)
-      (%cg-print d ";"))))
+      (generate-code* d ";"))))
 
 (defclass c-defstruct-node (ast-node)
   ((struct-type :type c-structured-type :initarg :struct-type :accessor struct-type)))
@@ -195,11 +195,11 @@
 (defmethod generate-code ((self c-defstruct-node))
   (with-slots (struct-type) self
     (with-slots (fields kind name) struct-type
-      (%cg-print *cg-toplevel-spacing* (format nil "~(~a~)" kind) " " name)
+      (generate-code* *cg-toplevel-spacing* (format nil "~(~a~)" kind) " " name)
       (%cg-block-around
        (dolist (f fields)
-	 (%cg-print *cg-freshline* (cdr f) " " (car f) ";")))
-      (%cg-print ";"))))
+	 (generate-code* *cg-freshline* (cdr f) " " (car f) ";")))
+      (generate-code ";"))))
 
 (defclass c-defun-node (c-compound-stmt-base)
   ((gv :type gval :initarg :gval)
@@ -213,25 +213,25 @@
 	   (return-type (return-type ftype))
 	   (argument-types (argument-types ftype))
 	   (variadic-p (variadic-p ftype)))
-      (%cg-print *cg-toplevel-spacing*)
-      (%cg-print return-type)
-      (%cg-print *cg-defun-return-type-separator*)
-      (%cg-print symbol "(")
+      (generate-code *cg-toplevel-spacing*)
+      (generate-code return-type)
+      (generate-code *cg-defun-return-type-separator*)
+      (generate-code* symbol "(")
       (loop
 	 for formal in formals
 	 for argtype in argument-types
 	 for comma-required-p = nil then t
 	 do (progn
 	      (when comma-required-p
-		(%cg-print ", "))
-	      (%cg-print argtype " " formal)))
+		(generate-code ", "))
+	      (generate-code* argtype " " formal)))
       (when variadic-p
 	(when (not (null formals))
-	  (%cg-print ", "))
-	(%cg-print "..."))
-      (%cg-print ")")
+	  (generate-code ", "))
+	(generate-code "..."))
+      (generate-code ")")
       (%cg-block-around
-       (%cg-print body)))))
+       (generate-code body)))))
 
 (defmethod simplify ((self c-defun-node))
   (with-slots (body) self
@@ -243,7 +243,7 @@
   ((test-expr :type c-expr :initarg :test-expr :accessor test-expr)))
 
 (defmethod generate-code ((self c-switch-case))
-  (%cg-print *cg-freshline* "case " (test-expr self) ":")
+  (generate-code* *cg-freshline* "case " (test-expr self) ":")
   (%emit-compound-body self))
 
 (defmethod simplify ((self c-switch-case)) self)
@@ -255,7 +255,7 @@
 (defclass c-switch-default (c-compound-stmt-base) ())
 
 (defmethod generate-code ((self c-switch-default))
-  (%cg-print *cg-freshline* "default:")
+  (generate-code* *cg-freshline* "default:")
   (%emit-compound-body self))
 
 (defmethod simplify ((self c-switch-default)) self)
@@ -269,10 +269,9 @@
    (cases :initarg :cases :accessor cases)))
 
 (defmethod generate-code ((self c-switch-stmt))
-  (%cg-print "switch (" (test-expr self) ")")
+  (generate-code* "switch (" (test-expr self) ")")
   (%cg-block-around
-   (dolist (child (cases self))
-     (generate-code child))))
+   (generate-code (cases self))))
 
 (defmethod simplify ((self c-switch-stmt)) self)
 

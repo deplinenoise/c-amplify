@@ -1,4 +1,4 @@
-(in-package :se.defmacro.c-amplify)
+(in-package #:se.defmacro.c-amplify)
 
 (defvar *c-systems* (make-hash-table))
 

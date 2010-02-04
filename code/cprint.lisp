@@ -26,31 +26,37 @@
 (defparameter *cg-end-block* (list *cg-freshline* "}"))
 (defparameter *cg-defun-return-type-separator* (list *cg-newline*))
 
-(defun %cg-print (&rest items)
-  "Pretty-print one or more ITEMS, taking indentation into account."
-  (labels ((indent-level ()
-	     (+ (* 0 *stmt-depth*) *compound-depth*))
-	   (finish-line ()
-	     (princ #\newline)
-	     (setf *pending-indent* t))
-	   (%fresh-line ()
-	    (unless *pending-indent* (finish-line)))
-	   (really-print (datum)
-	     (when *pending-indent*
-	       ;; (format t "/*~a/~a*/ " *stmt-depth* *compound-depth*)
-	       (dotimes (x (indent-level)) (princ *cg-indent-str*))
-	       (setf *pending-indent* nil))
-	     (princ datum)))
-    (dolist (item items)
-      (cond ((eq *cg-freshline* item) (%fresh-line))
-	    ((eq *cg-newline* item) (finish-line))
-	    ((eq *cg-optional-separator* item) (unless *pending-indent* (princ " ")))
-	    ((listp item) (dolist (i item) (%cg-print i)))
-	    ((typep item 'ast-node) (generate-code item))
-	    ((typep item 'c-type) (emit-c-type item #'%cg-print))
-	    ((stringp item) (really-print item))
-	    ((or (integerp item) (floatp item)) (really-print (format nil "~a" item)))
-	    ((symbolp item) (really-print (format nil "~a" item)))
-	    (t (error "unsupported item: ~a" item)))))
-  (values))
+(declare (inline %flush-indent))
+
+(defun %flush-indent ()
+  (when *pending-indent*
+    (dotimes (x *stmt-depth*) (princ *cg-indent-str*))
+    (setf *pending-indent* nil)))
+
+(defmacro generate-code* (&rest items)
+  `(progn
+    ,@(loop for i in items collecting `(generate-code ,i))))
+
+(defmethod generate-code ((list list))
+  (dolist (i list)
+    (generate-code i)))
+
+(defmethod generate-code ((type-obj c-type))
+  (emit-c-type type-obj #'princ))
+
+(defmethod generate-code ((sym (eql *cg-newline*)))
+  (princ #\newline)
+  (setf *pending-indent* t))
+
+(defmethod generate-code ((sym (eql *cg-freshline*)))
+  (unless *pending-indent*
+    (generate-code *cg-newline*)))
+
+(defmethod generate-code ((sym (eql *cg-optional-separator*)))
+  (unless *pending-indent*
+    (princ " ")))
+
+(defmethod generate-code (datum)
+  (%flush-indent)
+  (princ datum))
 

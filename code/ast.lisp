@@ -69,11 +69,6 @@ lexical binding cannot be found). Calls ERROR if the symbol isn't bound."
     (simplify child)
     self))
 
-(defmethod generate-code ((list list))
-  "Generate code for a list of things. Convenience method."
-  (%cg-print list)
-  (values))
-
 (defun dump-ast (ast)
   "Utility function to pretty-print an AST structure when debugging."
   (labels ((indent (level)
