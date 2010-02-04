@@ -233,6 +233,49 @@
     (setf body (inline-compound-bodies body (ast-env self))))
   self)
 
+
+(defclass c-switch-case (c-compound-stmt-base)
+  ((test-expr :type c-expr :initarg :test-expr :accessor test-expr)))
+
+(defmethod generate-code ((self c-switch-case))
+  (%cg-print *cg-freshline* "case " (test-expr self) ":")
+  (%emit-compound-body self))
+
+(defmethod simplify ((self c-switch-case)) self)
+
+(defmethod ast-children ((self c-switch-case))
+  (cons (test-expr self) (c-compound-body self)))
+
+
+(defclass c-switch-default (c-compound-stmt-base) ())
+
+(defmethod generate-code ((self c-switch-default))
+  (%cg-print *cg-freshline* "default:")
+  (%emit-compound-body self))
+
+(defmethod simplify ((self c-switch-default)) self)
+
+(defmethod ast-children ((self c-switch-default))
+  (c-compound-body self))
+
+
+(defclass c-switch-stmt (c-compound-stmt-base)
+  ((test-expr :type c-expr :initarg :test-expr :accessor test-expr)
+   (cases :initarg :cases :accessor cases)))
+
+(defmethod generate-code ((self c-switch-stmt))
+  (%cg-print "switch (" (test-expr self) ")")
+  (%cg-block-around
+   (dolist (child (cases self))
+     (generate-code child))))
+
+(defmethod simplify ((self c-switch-stmt)) self)
+
+(defmethod ast-children ((self c-switch-stmt))
+  (with-slots (test-expr) self
+    (cons test-expr (c-compound-body self))))
+
+
 (defmethod ast-children ((ast c-compound-stmt-base))
   (with-slots (body) ast
     body))

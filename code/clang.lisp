@@ -38,6 +38,7 @@ for each id declared."
 
 (defparameter *c-keyword-symbols*
   '(if for return aref and or xor
+    case default switch
     progn break continue goto label declare defstruct defunion defun
     deftype cast sizeof sizeof-type struct union ptr const volatile
     restrict ->))
@@ -129,6 +130,20 @@ representing the statement"
 		    :struct-type (%lookup-tagged-type (case k/w
 							(defstruct 'struct)
 							(defunion 'union)) id)))
+    ((list* 'switch expr cases)
+     (make-instance 'c-switch-stmt
+		    :test-expr (parse-c-expr expr)
+		    :cases (loop for c in cases collecting
+				(match c
+				  ((list* 'case expr body)
+				   (make-instance 'c-switch-case
+						  :test-expr (parse-c-expr expr)
+						  :body (mapcar #'parse-c-stmt body)))
+				  ((list* 'default body)
+				   (make-instance 'c-switch-default
+						  :body (mapcar #'parse-c-stmt body)))
+				  (_ (error "unsupported case/default form: ~a" c))))))
+
     ((list 'ast-stmt-if expr data) (if (eval expr)
 				       (%parse-structured-c-stmt (c-macroexpand data))
 				       nil))

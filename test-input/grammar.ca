@@ -1,0 +1,6 @@
+(defun switch-test ((x int))
+  (switch x
+     (case 10 (return (+ x 1)))
+     (case 20 (return (+ x 2)))
+     (default (break))))
+

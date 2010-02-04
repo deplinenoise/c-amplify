@@ -1,6 +1,6 @@
 
 (defsystem :core
- (:files "let" "macrotest"))
+ (:files "let" "macrotest" "grammar"))
 
 (defsystem :render
  (:depends :core)
