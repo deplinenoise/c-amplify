@@ -34,6 +34,11 @@
 (defmethod ast-children ((self c-null-stmt))
   nil)
 
+(defmethod generate-code :around ((self c-stmt))
+  (let ((*stmt-depth* (1+ *stmt-depth*)))
+    (%cg-print *cg-freshline*)
+    (call-next-method)))
+
 (defmethod generate-code ((self c-null-stmt))
   (when (> *stmt-depth* 0)
     (princ ";")))
