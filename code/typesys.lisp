@@ -132,8 +132,7 @@
 (defmethod print-object ((self c-type) stream)
   (let ((*standard-output* stream))
     (format t "#<~a \"" (class-name (class-of self)))
-    (let ((*standard-output* stream))
-      (emit-c-type self))
+    (emit-c-type self)
     (format t "\">")))
 
 (defun lisp-id->string (symbol)
