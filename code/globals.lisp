@@ -20,9 +20,20 @@
 (defclass gval ()
   ((sym :type symbol :reader gval-sym :initarg :symbol)
    (kind :type symbol :reader gval-kind :initarg :kind)
+   (linkage :accessor linkage)
    (type-obj :accessor gval-type :initarg :type)
    (ast :accessor gval-ast :initarg :ast)
    (source :type (or source-file null) :accessor gval-source :initarg :source)))
+
+;; Linkage:
+;; - static, extern
+;; - _declspec(dllexport)
+
+(defun make-defun-gval (sym function-type)
+  (make-instance 'gval
+		 :sym sym
+		 :type-obj function-type
+		 :linkage "extern"))
 
 (defun set-global-gv (gv)
   (declare (type gval gv))

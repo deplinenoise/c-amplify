@@ -177,7 +177,7 @@
     ;; FIXME: need a (emit-declaration ...) to make function types
     ;; work, because there the type surrounds the identifier
     (%cg-stmt-around
-     (generate-code* decl-type " " name)
+     (generate-code (c-type->string decl-type name))
      (when init-expr
        (generate-code* " = " init-expr)))))
 
@@ -198,7 +198,7 @@
       (generate-code* *cg-toplevel-spacing* (format nil "~(~a~)" kind) " " name)
       (%cg-block-around
        (dolist (f fields)
-	 (generate-code* *cg-freshline* (cdr f) " " (car f) ";")))
+	 (generate-code* *cg-freshline* (c-type->string (cdr f) (car f)) ";")))
       (generate-code ";"))))
 
 (defclass c-defun-node (c-compound-stmt-base)

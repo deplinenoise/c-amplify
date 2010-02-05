@@ -28,7 +28,7 @@
 
 (defun %flush-indent ()
   (when *pending-indent*
-    (dotimes (x *stmt-depth*) (princ *cg-indent-str*))
+    (dotimes (x *compound-depth*) (princ *cg-indent-str*))
     (setf *pending-indent* nil)))
 
 (defmacro generate-code* (&rest items)
@@ -40,7 +40,8 @@
     (generate-code i)))
 
 (defmethod generate-code ((type-obj c-type))
-  (emit-c-type type-obj #'princ))
+  (%flush-indent)
+  (emit-c-type type-obj))
 
 (defmethod generate-code ((sym (eql *cg-newline*)))
   (princ #\newline)

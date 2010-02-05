@@ -130,9 +130,11 @@
 ;;; Printing objects in the REPL
 
 (defmethod print-object ((self c-type) stream)
-  (format stream "#<~a \"" (class-name (class-of self)))
-  (emit-c-type self #'(lambda (arg) (princ arg stream)))
-  (format stream "\">"))
+  (let ((*standard-output* stream))
+    (format t "#<~a \"" (class-name (class-of self)))
+    (let ((*standard-output* stream))
+      (emit-c-type self))
+    (format t "\">")))
 
 (defun lisp-id->string (symbol)
   (map 'string
@@ -141,52 +143,66 @@
 
 ;;; Formatted type emission
 
-(defgeneric emit-c-type (object write-fn)
-  (:documentation "Emit a c-type subtype OBJECT using the specified WRITE-FN function to output string data"))
+(defun c-type->string (type-obj &optional declared-name)
+  (with-output-to-string (*standard-output*)
+    (emit-c-type type-obj declared-name)))
 
-(defmethod emit-c-type ((self c-void-type) write-fn)
-  (funcall write-fn "void"))
+(defgeneric emit-c-type (object &optional declared-name)
+  (:documentation "Emit a c-type subtype OBJECT. If DECLARED-NAME is non-nil, a declaration of that name is emitted rather than just the type."))
 
-(defmethod emit-c-type ((self c-basic-type) write-fn)
+(defmethod emit-c-type ((self c-void-type) &optional declared-name)
+  (princ "void")
+  (when declared-name
+    (error "cannot declare void variabled")))
+
+(defun %maybe-emit-name (declared-name)
+  (when declared-name
+    (format t " ~a" declared-name)))
+
+(defmethod emit-c-type ((self c-basic-type) &optional declared-name)
   (with-slots (appearance) self
-    (funcall write-fn appearance)))
+    (princ appearance))
+  (%maybe-emit-name declared-name))
 
-(defmethod emit-c-type ((self c-derived-type) write-fn)
+(defmethod emit-c-type ((self c-derived-type) &optional declared-name)
   (with-slots (qualifier-mask base-type) self
-    (emit-c-type base-type write-fn)
-    (when (/= 0 (logand +const-bit+ qualifier-mask))
-      (funcall write-fn " const"))
-    (when (/= 0 (logand +volatile-bit+ qualifier-mask))
-      (funcall write-fn " volatile"))
-    (when (/= 0 (logand +restrict-bit+ qualifier-mask))
-      (funcall write-fn " restrict"))))
+    (emit-c-type base-type)
+    (macrolet ((print-qualifier (bit string)
+		 `(when (/= 0 (logand ,bit qualifier-mask))
+		    (format t " ~a" ,string))))
+      (print-qualifier +const-bit+ "const")
+      (print-qualifier +volatile-bit+ "volatile")
+      (print-qualifier +restrict-bit+ "restrict")))
+  (%maybe-emit-name declared-name))
 
-(defmethod emit-c-type ((self c-pointer-type) write-fn)
+(defmethod emit-c-type ((self c-pointer-type) &optional declared-name)
   (with-slots (pointed-to-type) self
-    (emit-c-type pointed-to-type write-fn)
-    (funcall write-fn " *")))
+    (emit-c-type pointed-to-type)
+    (princ " *"))
+  (%maybe-emit-name declared-name))
 
-(defmethod emit-c-type ((self c-function-type) write-fn)
+(defmethod emit-c-type ((self c-function-type) &optional declared-name)
   (with-slots (return-type argument-types is-variadic) self
-    (emit-c-type return-type write-fn)
-    (funcall write-fn " (*)(")
+    (emit-c-type return-type)
+    (princ " (*")
+    (%maybe-emit-name declared-name)
+    (princ ")(")
     (let ((first-arg t))
       (dolist (arg-type argument-types)
 	(if first-arg
 	    (setf first-arg nil)
-	    (funcall write-fn ", "))
-	(emit-c-type arg-type write-fn))
+	    (princ ", "))
+	(emit-c-type arg-type))
       (when is-variadic
 	(unless first-arg
-	  (funcall write-fn ", "))
-	(funcall write-fn "..."))
-      (funcall write-fn ")"))))
+	  (princ ", "))
+	(princ "..."))
+      (princ ")"))))
 
-(defmethod emit-c-type ((self c-structured-type) write-fn)
+(defmethod emit-c-type ((self c-structured-type) &optional declared-name)
   (with-slots (kind name) self
-    (funcall write-fn (lisp-id->string kind))
-    (funcall write-fn " ")
-    (funcall write-fn (lisp-id->string name))))
+    (format t "~a ~a" (lisp-id->string kind) (lisp-id->string name)))
+  (%maybe-emit-name declared-name))
 
 (defgeneric base-type-of (type))
 
