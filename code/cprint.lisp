@@ -26,8 +26,6 @@
 (defparameter *cg-end-block* (list *cg-freshline* "}"))
 (defparameter *cg-defun-return-type-separator* (list *cg-newline*))
 
-(declare (inline %flush-indent))
-
 (defun %flush-indent ()
   (when *pending-indent*
     (dotimes (x *stmt-depth*) (princ *cg-indent-str*))
