@@ -35,6 +35,14 @@
   `(progn
     ,@(loop for i in items collecting `(generate-code ,i))))
 
+(defmethod generate-code ((symbol symbol))
+  (%flush-indent)
+  (labels ((translate-symbol-char (ch)
+	     (cond
+	       ((eql #\- ch) #\_)
+	       (t ch))))
+    (princ (map 'string #'translate-symbol-char (symbol-name symbol)))))
+
 (defmethod generate-code ((list list))
   (dolist (i list)
     (generate-code i)))
