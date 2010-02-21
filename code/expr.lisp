@@ -16,7 +16,8 @@
   '(satisfies c-expr-list-p))
 
 (defgeneric expr-typeof (expr)
-  (:documentation "Returns the type (a C-TYPE instance) of EXPR, taking into account rules such as arithmetic type promotion."))
+  (:documentation "Returns the type (a C-TYPE instance) of EXPR,
+  taking into account rules such as arithmetic type promotion."))
 
 (defclass c-unary-expr (c-expr)
   ((operand :type c-expr :initarg :operand :accessor operand))
