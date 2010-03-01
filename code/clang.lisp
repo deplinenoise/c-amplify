@@ -172,10 +172,7 @@ representing the statement"
       (analyze-defun-prototype prototype)
     (let* ((arg-types (loop for x in formals collect (cdr x)))
 	   (fn-type (get-function-type arg-types return-type variadic-p))
-	   (gval (make-instance 'gval
-				:symbol id
-				:kind :defun
-				:type fn-type)))
+	   (gval (make-defun-gval id fn-type)))
       (set-global-gv gval))))
 
 (defun %phase1-tagged-type (k/w id clauses)
@@ -183,11 +180,8 @@ representing the statement"
     (add-tagged-type kind id (%parse-defstruct-fields clauses))))
 
 (defun %phase1-deftype (id type-decl)
-  (let ((gv (make-instance 'gval
-			   :kind :type
-			   :type (eval-c-type type-decl)
-			   :symbol id)))
-    (set-global-gv gv)))
+  (let ((gval (make-type-gval id (eval-c-type type-decl))))
+    (set-global-gv gval)))
 
 (defun parse-c-stmt-phase1 (decl)
   "Populate the global namespace with type information about functions and types from DECL."
