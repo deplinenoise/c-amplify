@@ -181,6 +181,12 @@
 		   (%type-of-lexical-symbol (slot-value self 'var-name) (ast-env self)))
     :emit (var-name))
 
+(defmethod gather-decls ((var-exp c-variable-expr) state)
+  (let* ((sym (var-name var-exp))
+	 (gv (lookup-gval sym)))
+    (when gv
+      (setf (gethash gv state) t))))
+
 (defun %select-field (struct-type field)
   (let ((base-type (base-type-of struct-type)))
     (when (typep base-type 'c-pointer-type)

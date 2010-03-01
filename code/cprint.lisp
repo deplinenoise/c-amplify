@@ -71,3 +71,42 @@
   (%flush-indent)
   (princ datum))
 
+(defun generate-source-file (nodes)
+  (let ((used-decls (make-hash-table)))
+    (dolist (ast nodes)
+      (gather-decls ast used-decls))
+    ;; TODO: Sort declarations in dependency order.
+    (loop for gv being the hash-keys in used-decls
+       do (generate-decl gv))
+    (generate-code nodes)))
+
+
+(defun %generate-defun-decl (gv)
+  (let ((sym (gval-sym gv))
+	(ftype (gval-type gv)))
+    (generate-code* "extern " (return-type ftype) " " sym "(")
+    (let (comma-needed)
+      (loop
+	 for arg-type in (argument-types ftype)
+	 do (progn
+	      (when comma-needed
+		(generate-code ", "))
+	      (setf comma-needed t)
+	      (generate-code arg-type)))
+      (when (variadic-p ftype)
+	(when comma-needed
+	  (generate-code ", "))
+	(generate-code "..."))
+      (generate-code ");")
+      (generate-code *cg-newline*))))
+
+(defun %generate-type-decl (gv)
+  (let ((sym (gval-sym gv))
+	(ftype (gval-type gv)))
+    (emit-c-type ftype sym)
+    (princ ";")))
+
+(defun generate-decl (gv)
+  (ecase (gval-kind gv)
+    (:defun (%generate-defun-decl gv))
+    (:type (%generate-type-decl gv))))

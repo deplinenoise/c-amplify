@@ -255,6 +255,7 @@ variation of it using the specified QUALIFIERS."
 				     :qualifier-mask qualifier-mask))))))))
 
 (defun lookup-type (sym)
+  (assert sym)
   (macrolet ((test-special-var (sym special-var)
 	       `(when (eq ,sym ',special-var)
 		  (unless ,special-var

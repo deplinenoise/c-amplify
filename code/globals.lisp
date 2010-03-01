@@ -33,6 +33,12 @@
   (make-instance 'gval
 		 :symbol sym
 		 :kind :defun
+		 :type function-type))
+
+(defun make-defun/extern-gval (sym function-type)
+  (make-instance 'gval
+		 :symbol sym
+		 :kind :defun
 		 :type function-type
 		 :linkage "extern"))
 

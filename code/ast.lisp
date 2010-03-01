@@ -3,7 +3,12 @@
 (in-package #:se.defmacro.c-amplify)
 
 (defgeneric generate-code (ast)
-  (:documentation "Print code for the datum passed which may be a c-type or ast-node or a list of such objects for convenience."))
+  (:documentation "Print code for the datum passed which may be a
+  c-type or ast-node or a list of such objects for convenience."))
+
+(defgeneric gather-decls (ast state)
+  (:documentation "Visit AST, looking for declarations and populate
+  the hash table STATE with their gval objects."))
 
 (defgeneric simplify (ast)
   (:documentation "Visit the ast-node AST and try to simplify it"))
@@ -90,3 +95,9 @@ lexical binding cannot be found). Calls ERROR if the symbol isn't bound."
     (walk ast 0))
   (values))
 
+(defmethod gather-decls :after (ast state)
+  (dolist (ch (ast-children ast))
+    (gather-decls ch state)))
+
+(defmethod gather-decls (ast state)
+  (values))

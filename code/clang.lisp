@@ -39,9 +39,9 @@ for each id declared."
 (defparameter *c-keyword-symbols*
   '(if for return aref and or xor
     case default switch
-    progn break continue goto label declare defstruct defunion defun
+    progn break continue goto label declare defstruct defunion defun defun/extern
     deftype cast sizeof sizeof-type struct union ptr const volatile
-    restrict ->))
+    restrict -> |...|))
 
 (dolist (sym *c-keyword-symbols*) (export-symbol-to-c sym))
 
@@ -123,6 +123,7 @@ representing the statement"
 					     :init-expr (parse-c-expr init-expr)
 					     :decl-type expr-type)))
 			   (_ (error "illegal declarator: ~a" form))))))
+    ((list* 'defun/extern _) nil)
     ((list* 'defun id prototype body)
      (%phase2-defun id prototype body))
     ((list* (and (or 'defstruct 'defunion) k/w) id _)
@@ -167,13 +168,15 @@ representing the statement"
 	    (nreverse formals)
 	    variadic-p)))
 
-(defun %phase1-defun (id prototype)
+(defun %phase1-defun (id prototype &key external)
   (multiple-value-bind (return-type formals variadic-p)
       (analyze-defun-prototype prototype)
     (let* ((arg-types (loop for x in formals collect (cdr x)))
-	   (fn-type (get-function-type arg-types return-type variadic-p))
-	   (gval (make-defun-gval id fn-type)))
-      (set-global-gv gval))))
+	   (fn-type (get-function-type arg-types return-type variadic-p)))
+      (set-global-gv
+       (cond
+	 (external (make-defun/extern-gval id fn-type))
+	 (t (make-defun-gval id fn-type)))))))
 
 (defun %phase1-tagged-type (k/w id clauses)
   (let ((kind (ecase k/w (defstruct :struct) (defunion :union))))
@@ -189,7 +192,8 @@ representing the statement"
     ;; FIXME: Variadic support
     ((list* 'defun id (and (list* _) proto) _) (%phase1-defun id proto))
     ((list* (and (or 'defstruct 'defunion) k/w) id clauses) (%phase1-tagged-type k/w id clauses))
-    ((list* 'deftype id type-decl) (%phase1-deftype id type-decl)))
+    ((list* 'deftype id type-decl) (%phase1-deftype id type-decl))
+    ((list* 'defun/extern id (and (list* _) proto) _) (%phase1-defun id proto :external t)))
   (values))
 
 (defun parse-c-stmt (decl)

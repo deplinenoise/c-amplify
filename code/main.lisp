@@ -86,7 +86,7 @@ source files and then generate a single output file."
     (%eval-ca-phase1 expansion)
     (let ((ast-nodes (%eval-ca-phase2 expansion)))
       (with-open-file (*standard-output* (c-system-output-file system) :direction :output :if-exists :supersede)
-	(generate-code ast-nodes)))))
+	(generate-source-file ast-nodes)))))
 
 (defun find-system (id)
   (multiple-value-bind (system exists-p) (gethash id *c-systems*)

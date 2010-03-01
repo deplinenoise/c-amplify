@@ -1,0 +1,2 @@
+
+(defun/extern printf ((format restrict ptr (const char)) (return int) |...|))

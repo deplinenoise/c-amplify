@@ -1,0 +1,4 @@
+
+(defun main ((argc int) (argv (ptr ptr char)) (return int))
+  (printf "Hello, world!\\n")
+  (return 1))

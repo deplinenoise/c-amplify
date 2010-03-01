@@ -1,0 +1,5 @@
+
+(defsystem :hello
+ (:files "hello""crt"))
+
+(update :hello)
