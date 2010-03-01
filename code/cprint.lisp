@@ -6,13 +6,17 @@
   "Symbol used to represent newlines")
 
 (defvar *cg-optional-separator* (gensym "optional-separator")
-  "Symbol used to represent optional spaces before opening braces (those we don't want printed at the start of a fresh line)")
+  "Symbol used to represent optional spaces before opening
+  braces (those we don't want printed at the start of a fresh line)")
 
 (defvar *cg-freshline* (gensym "freshline-symbol")
   "Symbol used to represent newlines on non-blank lines")
 
 (defparameter *outer-precedence* 1000
-  "The precedence of the current closes expression on the stack. This is used to avoid parenthesis around every subexpression. We default it to something very high as the toplevel expression never needs parens.")
+  "The precedence of the current closes expression on the stack. This
+  is used to avoid parenthesis around every subexpression. We default
+  it to something very high as the toplevel expression never needs
+  parens.")
 
 (defparameter *cg-print-depth* 0)
 (defparameter *cg-indent-str* "    ")
