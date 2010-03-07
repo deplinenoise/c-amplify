@@ -168,14 +168,14 @@ representing the statement"
 	    (nreverse formals)
 	    variadic-p)))
 
-(defun %phase1-defun (id prototype &key external)
+(defun %phase1-defun (id prototype &key external attributes)
   (multiple-value-bind (return-type formals variadic-p)
       (analyze-defun-prototype prototype)
     (let* ((arg-types (loop for x in formals collect (cdr x)))
 	   (fn-type (get-function-type arg-types return-type variadic-p)))
       (set-global-gv
        (cond
-	 (external (make-defun/extern-gval id fn-type))
+	 (external (make-defun/extern-gval id fn-type attributes))
 	 (t (make-defun-gval id fn-type)))))))
 
 (defun %phase1-tagged-type (k/w id clauses)
@@ -193,7 +193,7 @@ representing the statement"
     ((list* 'defun id (and (list* _) proto) _) (%phase1-defun id proto))
     ((list* (and (or 'defstruct 'defunion) k/w) id clauses) (%phase1-tagged-type k/w id clauses))
     ((list* 'deftype id type-decl) (%phase1-deftype id type-decl))
-    ((list* 'defun/extern id (and (list* _) proto) _) (%phase1-defun id proto :external t)))
+    ((list* 'defun/extern id (and (list* _) proto) attrs) (%phase1-defun id proto :external t :attributes attrs)))
   (values))
 
 (defun parse-c-stmt (decl)

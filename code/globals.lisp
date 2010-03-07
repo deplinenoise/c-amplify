@@ -20,7 +20,7 @@
 (defclass gval ()
   ((sym :type symbol :reader gval-sym :initarg :symbol)
    (kind :type symbol :reader gval-kind :initarg :kind)
-   (linkage :accessor linkage :initarg :linkage)
+   (linkage :accessor gval-linkage :initarg :linkage)
    (type-obj :accessor gval-type :initarg :type)
    (ast :accessor gval-ast :initarg :ast)
    (source :type (or source-file null) :accessor gval-source :initarg :source)))
@@ -35,12 +35,13 @@
 		 :kind :defun
 		 :type function-type))
 
-(defun make-defun/extern-gval (sym function-type)
-  (make-instance 'gval
-		 :symbol sym
-		 :kind :defun
-		 :type function-type
-		 :linkage "extern"))
+(defun make-defun/extern-gval (sym function-type &optional attrs)
+  (let ((linkage (getf attrs :linkage "extern")))
+    (make-instance 'gval
+		   :symbol sym
+		   :kind :defun
+		   :type function-type
+		   :linkage linkage)))
 
 (defun make-type-gval (sym type-obj)
   (make-instance 'gval

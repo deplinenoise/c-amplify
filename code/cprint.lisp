@@ -84,7 +84,7 @@
 (defun %generate-defun-decl (gv)
   (let ((sym (gval-sym gv))
 	(ftype (gval-type gv)))
-    (generate-code* "extern " (return-type ftype) " " sym "(")
+    (generate-code* (gval-linkage gv) " " (return-type ftype) " " sym "(")
     (let (comma-needed)
       (loop
 	 for arg-type in (argument-types ftype)

@@ -4,8 +4,6 @@
 * Array types and declarations. Make aref work with arrays too
   (possibly via pointer decay).
 
-* Switch/case AST - should be easy
-
 * Language concerns:
 
   - Currently hijacking e.g. ptr, aref and other short words as part
@@ -58,7 +56,14 @@ structure (if, while, ...)
 
 * Reamplifying just enough every run (track dependencies)
 
+* String literal quoting.. Alter the reader macro for strings in the
+  c-amplify reader so it preserves the relevant quotes for C style
+  strings. Currently "\n" is translated to n by the reader, and "\\n"
+  is passed through as is so there's no way to output "\n".
+
 * External declarations and linkage -- hairy
+
+(Partial solution in place with gval linkage slot)
 
 - Import windows.h and entire CRT into x86, x64 packages as proof of
 concept (need a set of defines to import the correct definitions)

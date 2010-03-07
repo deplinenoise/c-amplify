@@ -1,2 +1,7 @@
 
-(defun/extern printf ((format restrict ptr (const char)) (return int) |...|))
+#+WIN32
+(defun/extern printf ((format ptr (const char)) (return int) |...|)
+	:LINKAGE "__declspec(dllimport)")
+
+#-WIN32
+(defun/extern printf ((format ptr (const char)) (return int) |...|))
